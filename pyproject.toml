@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=65.5.0", "wheel>=0.45.1"]  # Match installed versions <button class="citation-flag" data-index="1">
+requires = ["setuptools>=65.5.0", "wheel>=0.45.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -22,9 +22,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
-# PEP 631-compliant dependencies <button class="citation-flag" data-index="6">
 dependencies = [
-    # Core dependencies (uncomment and add yours)
     # "numpy>=1.24.0",
     # "pandas>=2.0.0",
 ]
@@ -43,10 +41,10 @@ docs = [
     # "furo>=2023.9.0",
 ]
 
-[tool.setuptools.packages.find]  # Automatic package discovery <button class="citation-flag" data-index="3">
+[tool.setuptools.packages.find]
 where = ["."]  # Directory containing your Python packages
 include = ["*"]
-namespaces = true  # Support namespace packages
+namespaces = true
 
 [tool.black]
 target-version = ["py311"]
