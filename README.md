@@ -5,9 +5,12 @@
 ```
 pip install -r reqs/requirements.txt
 ```
+```
+pip install -e .
+```
 
 ## Common Commands
 Update requirements
 ```
-
+pip-compile --extra dev --output-file=reqs/development.txt pyproject.toml
 ```
