@@ -3,7 +3,7 @@
 
 ## Set Up
 ```
-pip install -r reqs/requirements.txt
+pip install -r reqs/development.txt
 ```
 ```
 pip install -e .
