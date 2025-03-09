@@ -25,6 +25,6 @@ def predict_property_simple(smiles, model_path="src/chem_augur/models/gnn/simple
     return prediction.item()
 
 if __name__ == '__main__':
-    smiles_input = "CCCC" # Example SMILES
+    smiles_input = "CCCCCCCCCC" # Example SMILES
     predicted_value = predict_property_simple(smiles_input)
     print(f"Predicted property for SMILES '{smiles_input}': {predicted_value}")

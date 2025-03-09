@@ -4,7 +4,8 @@ from torch_geometric.data import Data
 import torch
 
 def smiles_to_pyg_graph_simple(smiles):
-    """Converts a SMILES string to a very basic PyTorch Geometric Data graph."""
+    """Converts a SMILES string to a very basic PyTorch Geometric Data graph,
+       handling molecules with no bonds by adding self-loops."""
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None
@@ -25,7 +26,7 @@ def smiles_to_pyg_graph_simple(smiles):
         edge_index_list.append((end_atom_index, start_atom_index)) # Bidirectional
     edge_index = torch.tensor(edge_index_list, dtype=torch.long).t().contiguous()
 
-    # No edge features for now - we can add them later
+    # No edge features for now
 
     data = Data(x=x, edge_index=edge_index) # No edge_attr for now
     return data
