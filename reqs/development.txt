@@ -58,6 +58,7 @@ networkx==3.4.2
     # via torch
 numpy==2.2.3
     # via
+    #   rdkit
     #   scikit-learn
     #   scipy
     #   torch-geometric
@@ -69,7 +70,9 @@ packaging==24.2
 pathspec==0.12.1
     # via black
 pillow==11.1.0
-    # via torchvision
+    # via
+    #   rdkit
+    #   torchvision
 pip-tools==7.4.1
     # via chem_augur (pyproject.toml)
 platformdirs==4.3.6
@@ -86,6 +89,8 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
+rdkit==2024.9.5
+    # via chem_augur (pyproject.toml)
 requests==2.32.3
     # via torch-geometric
 scikit-learn==1.6.1
