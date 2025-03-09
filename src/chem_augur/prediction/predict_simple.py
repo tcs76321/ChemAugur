@@ -2,8 +2,9 @@
 import torch
 from chem_augur.models.gnn.gcn_model import SimpleGCN # Import simple GCN model
 from chem_augur.features.molecular_graph import smiles_to_pyg_graph_simple # Import simplified graph conversion
+from torch_geometric.data import Data # Import Data
 
-def predict_property_simple(smiles, model_path="models/simple_gcn_model_minimal.pth"):
+def predict_property_simple(smiles, model_path="src/chem_augur/models/gnn/simple_gcn_model_minimal.pth"):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # 1. Convert SMILES to Graph
@@ -20,7 +21,7 @@ def predict_property_simple(smiles, model_path="models/simple_gcn_model_minimal.
 
     # 3. Make Prediction
     with torch.no_grad():
-        prediction = model(graph_data.unsqueeze(0))
+        prediction = model(Data(x=graph_data.x.unsqueeze(0), edge_index=graph_data.edge_index, batch=torch.tensor([0]))) # Corrected line
     return prediction.item()
 
 if __name__ == '__main__':

@@ -8,14 +8,14 @@ from chem_augur.models.gnn.gcn_model import SimpleGCN # Import simple GCN model
 
 # --- Synthetic Data (Tiny Dataset) ---
 smiles_list = ["CCO", "CCC", "C=C", "O=C=O"] # Ethanol, Propane, Ethene, Carbon Dioxide
-property_values = [1.0, 2.0, 1.5, 0.5] # Example property values (replace with something meaningful if you have a target property in mind)
+property_values = [1.0, 2.0, 1.5, 0.5]
 
 # Convert SMILES to PyG graphs and create labels
 data_list = []
 for smiles, value in zip(smiles_list, property_values):
     graph_data = smiles_to_pyg_graph_simple(smiles)
     if graph_data is not None:
-        graph_data.y = torch.tensor([value], dtype=torch.float)
+        graph_data.y = torch.tensor([[value]], dtype=torch.float)
         data_list.append(graph_data)
 
 # --- Data Loader ---
