@@ -8,7 +8,7 @@ from chem_augur.models.gnn.gcn_model import SimpleGCN # Import simple GCN model
 
 # --- Synthetic Data (Tiny Dataset) ---
 smiles_list = ["CCO", "CCC", "C=C", "O=C=O"] # Ethanol, Propane, Ethene, Carbon Dioxide
-property_values = [1.0, 2.0, 1.5, 0.5]
+property_values = [78.37, -42, -103.7, -70]  # Celsius boiling point
 
 # Convert SMILES to PyG graphs and create labels
 data_list = []
@@ -29,7 +29,7 @@ loss_function = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 # --- Training Loop (Simplified) ---
-epochs = 50
+epochs = 300000
 for epoch in range(epochs):
     model.train()
     total_loss = 0
