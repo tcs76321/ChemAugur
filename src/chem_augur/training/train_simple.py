@@ -44,5 +44,5 @@ for epoch in range(epochs):
     print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss/len(data_loader):.4f}")
 
 # --- Save Trained Model ---
-torch.save(model.state_dict(), "models/simple_gcn_model_minimal.pth")
-print("Minimal SimpleGCN model saved to models/simple_gcn_model_minimal.pth")
+torch.save(model.state_dict(), "src/chem_augur/models/gnn/simple_gcn_model_minimal.pth")
+print("Minimal SimpleGCN model saved.")

@@ -14,3 +14,6 @@ Update requirements
 ```
 pip-compile --extra dev --output-file=reqs/development.txt pyproject.toml
 ```
+```
+PYTHONPATH=src python src/chem_augur/training/train_simple.py
+```

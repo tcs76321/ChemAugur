@@ -1,3 +1,4 @@
 .idea
 __pycache__/
 chem_augur.egg-info
+*.pth
