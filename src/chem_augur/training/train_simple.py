@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch_geometric.loader import DataLoader
-from features.molecular_graph import smiles_to_pyg_graph_simple # Import simplified graph conversion
-from models.gnn_architectures.simple_gcn_model import SimpleGCN # Import simple GCN model
+from chem_augur.features.molecular_graph import smiles_to_pyg_graph_simple # Import simplified graph conversion
+from chem_augur.models.gnn.gcn_model import SimpleGCN # Import simple GCN model
 
 # --- Synthetic Data (Tiny Dataset) ---
 smiles_list = ["CCO", "CCC", "C=C", "O=C=O"] # Ethanol, Propane, Ethene, Carbon Dioxide

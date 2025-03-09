@@ -1,7 +1,7 @@
 # prediction/predict_simple.py
 import torch
-from models.gnn_architectures.simple_gcn_model import SimpleGCN # Import simple GCN model
-from features.molecular_graph import smiles_to_pyg_graph_simple # Import simplified graph conversion
+from chem_augur.models.gnn.gcn_model import SimpleGCN # Import simple GCN model
+from chem_augur.features.molecular_graph import smiles_to_pyg_graph_simple # Import simplified graph conversion
 
 def predict_property_simple(smiles, model_path="models/simple_gcn_model_minimal.pth"):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
