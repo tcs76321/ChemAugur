@@ -1,5 +1,4 @@
 # training/train_simple.py
-import time
 from datetime import datetime, timezone, timedelta
 import torch
 import torch.nn as nn
@@ -8,7 +7,6 @@ from torch_geometric.loader import DataLoader
 from chem_augur.features.molecular_graph import smiles_to_pyg_graph_simple
 from chem_augur.models.gnn.gcn_model import SimpleGCN
 
-# --- Synthetic Data ---
 smiles_list = ["CC", "CCC", "CCCC", "CCCCC", "CCCCCC", "CCCCCCC", "CCCCCCCC", "CCCCCCCCC"]
 property_values = [184.2, 231.2, 272.1, 309.2, 341.8, 371.6, 398.8, 424.1]
 
@@ -23,7 +21,6 @@ data_loader = DataLoader(data_list, batch_size=8, shuffle=True)
 
 # --- Model, Loss, Optimizer ---
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# Example: Increase hidden channels to 64, and use 4 GCN layers
 model = SimpleGCN(num_node_features=1, hidden_channels=64, output_channels=1, num_layers=4).to(device)
 loss_function = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
