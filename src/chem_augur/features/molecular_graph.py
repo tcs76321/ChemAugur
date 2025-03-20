@@ -4,8 +4,7 @@ from torch_geometric.data import Data
 import torch
 
 def smiles_to_pyg_graph_simple(smiles):
-    """Converts a SMILES string to a very basic PyTorch Geometric Data graph,
-       handling molecules with no bonds by adding self-loops."""
+    """Converts a SMILES string to a very basic PyTorch Geometric Data graph."""
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None
