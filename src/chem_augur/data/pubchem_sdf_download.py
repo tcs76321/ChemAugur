@@ -32,7 +32,7 @@ def download_sdf_files():
                      and not f.endswith(".md5")]
 
         for filename in sdf_files:
-            sdf_path = os.path.join(DATA_DIR, filename)
+            sdf_path = os.path.join(os.path.curdir, filename)
             md5_path = f"{sdf_path}.md5"
 
             # Skip existing verified files
@@ -69,7 +69,7 @@ def download_sdf_files():
                 raise ValueError("Checksum verification failed")
 
         ftp.quit()
-        print(f"\nAll files downloaded to: {os.path.abspath(DATA_DIR)}")
+        print(f"\nAll files downloaded to: {os.path.curdir}")
 
     except Exception as e:
         print(f"\nError: {str(e)}")
