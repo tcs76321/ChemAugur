@@ -2,9 +2,12 @@
 
 #### An open source project aiming to use graph neural networks to predict the physical properties of chemicals based only on their molecular structure and atomic makeup.
 
-### Current Status: Base functionality verified with hard coded data using Pytorch, PyG (PyTorch Geometric), and RDkit
-
-### Next Goal: Identify large open datasets for training, formulate ideal ETL process
+- ✅ Fundamental Pytorch, Torch Geometric, RDKit architecture setup and verified
+- ✅ Ideal Dataset identified, PubChem Compound SDF via FTP
+- ☑️ Finish data script to download, hashcheck, and manage SDF files
+- ☑️ Refine training procedure with a single SDF file
+- ☑️ Begin training on several SDF files
+- ☑️ Begin experimentation wit properties other than normal boiling point
 
 ## Set Up
 ```
