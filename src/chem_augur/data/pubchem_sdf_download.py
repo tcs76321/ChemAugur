@@ -4,6 +4,8 @@
 import os
 import hashlib
 from ftplib import FTP
+import gzip
+import shutil
 
 # Configuration
 FTP_SERVER = "ftp.ncbi.nlm.nih.gov"
@@ -58,6 +60,23 @@ def get_download_count(max_count):
             print("Invalid input. Please enter a number or 'all'")
 
 
+def unzip_files():
+    """Decompress all .sdf.gz files and delete archives"""
+    print("\nDecompressing files...")
+    for filename in os.listdir(CURRENT_DIR):
+        if filename.endswith(".sdf.gz"):
+            gz_path = os.path.join(CURRENT_DIR, filename)
+            sdf_path = gz_path[:-3]  # Remove .gz extension
+            try:
+                with gzip.open(gz_path, 'rb') as f_in:
+                    with open(sdf_path, 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                os.remove(gz_path)
+                print(f"  ✅ Decompressed and removed: {filename}")
+            except Exception as e:
+                print(f"  ❌ Failed to decompress {filename}: {str(e)}")
+
+
 def download_sdf_files():
     try:
         with FTP(FTP_SERVER) as ftp:
@@ -68,6 +87,9 @@ def download_sdf_files():
             all_files = list_files(ftp)
             existing_files = [f for f in all_files if os.path.exists(os.path.join(CURRENT_DIR, f))]
             available_files = [f for f in all_files if f not in existing_files]
+
+            # Reverse download order, download lowest IDs first
+            available_files = available_files[::-1]
 
             # Show status
             show_file_status(available_files, existing_files)
@@ -124,6 +146,9 @@ def download_sdf_files():
     except Exception as e:
         print(f"\nError: {str(e)}")
         raise
+    finally:
+        # Always attempt to decompress files after download attempt
+        unzip_files()
 
 
 if __name__ == "__main__":
