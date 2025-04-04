@@ -22,6 +22,10 @@ Update requirements
 ```
 pip-compile --extra dev --output-file=reqs/development.txt pyproject.toml
 ```
+Download SDF data files
+```
+python src/chem_augur/data/pubchem_sdf_download.py
+```
 Train model
 ```
 PYTHONPATH=src python src/chem_augur/training/train_simple.py
