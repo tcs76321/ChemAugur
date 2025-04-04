@@ -4,7 +4,7 @@
 
 - ✅ Fundamental Pytorch, Torch Geometric, RDKit architecture setup and verified
 - ✅ Ideal Dataset identified, PubChem Compound SDF via FTP
-- ☑️ Finish data script to download, hashcheck, and manage SDF files
+- ✅ Finish data script to download, hashcheck, and manage SDF files
 - ☑️ Refine training procedure with a single SDF file
 - ☑️ Begin training on several SDF files
 - ☑️ Begin experimentation wit properties other than normal boiling point
