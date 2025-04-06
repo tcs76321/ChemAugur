@@ -1,6 +1,5 @@
 # sdf_inspector.py
 import os
-from rdkit import Chem
 from rdkit.Chem import SDMolSupplier
 from rdkit.Chem import rdMolDescriptors  # Explicit import [[1]][[5]]
 
