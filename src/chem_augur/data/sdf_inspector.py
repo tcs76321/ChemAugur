@@ -1,7 +1,7 @@
 # sdf_inspector.py
 import os
 from rdkit.Chem import SDMolSupplier
-from rdkit.Chem import rdMolDescriptors  # Explicit import [[1]][[5]]
+from rdkit.Chem import rdMolDescriptors
 
 
 def list_sdf_files():
@@ -22,7 +22,6 @@ def display_molecule_info(mol):
         value = mol.GetProp(prop)
         print(f"{prop}: {value}")
 
-    # Corrected reference to rdMolDescriptors [[1]][[5]]
     print("\nMolecular Formula:", rdMolDescriptors.CalcMolFormula(mol))
     print("Number of Atoms:", mol.GetNumAtoms())
     print("Number of Bonds:", mol.GetNumBonds())
