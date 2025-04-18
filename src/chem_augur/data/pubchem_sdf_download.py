@@ -41,8 +41,8 @@ def show_file_status(available, existing):
     print("\nExisting files:")
     if len(existing) == 0:
         print("NO EXISTENT DOWNLOADS")
-    for f in existing[:10]:
-        print(f" - {f}")
+    for f in existing:
+        print(f" - {f[:-3]}")
     if len(existing) > 10:
         print(f" ... and {len(existing) - 10} more files")
 
@@ -87,7 +87,7 @@ def download_sdf_files():
 
             # Get file lists
             all_files = list_files(ftp)
-            existing_files = [f for f in all_files if os.path.exists(os.path.join(CURRENT_DIR, f))]
+            existing_files = [f for f in all_files if os.path.exists(os.path.join(CURRENT_DIR, f[:-3]))]
             available_files = [f for f in all_files if f not in existing_files]
 
             # Show status
