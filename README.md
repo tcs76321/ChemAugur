@@ -26,6 +26,10 @@ Download SDF data files
 ```
 python src/chem_augur/data/pubchem_sdf_download.py
 ```
+Inspect SDF files
+```
+python src/chem_augur/data/sdf_inspector.py
+```
 Train model
 ```
 PYTHONPATH=src python src/chem_augur/training/train_simple.py
