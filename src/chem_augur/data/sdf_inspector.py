@@ -1,54 +1,88 @@
 # sdf_inspector.py
 import os
+from rdkit import Chem
 from rdkit.Chem import SDMolSupplier
+from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
+from collections import defaultdict
 
 
 def list_sdf_files():
-    """List all SDF files in current directory"""
-    return [f for f in os.listdir('.')
-            if f.endswith('.sdf') and os.path.isfile(f)]
+    """List SDF files in the nested data directory"""
+    data_dir = os.path.abspath("src/chem_augur/data")  # Explicit path from project root
+    if not os.path.exists(data_dir) or not os.path.isdir(data_dir):
+        return []
+
+    return [
+        f for f in os.listdir(data_dir)
+        if f.endswith(('.sdf', '.sdf.gz')) and os.path.isfile(os.path.join(data_dir, f))
+    ]
 
 
 def display_molecule_info(mol):
-    """Show detailed information about an RDKit molecule"""
+    """Show detailed molecule information with key descriptors"""
     if mol is None:
         print("Invalid molecule entry")
         return
 
     print("\nMolecule Properties:")
     print("-------------------")
-    for prop in mol.GetPropNames():
-        value = mol.GetProp(prop)
-        print(f"{prop}: {value}")
+    # Sort properties alphabetically
+    for prop in sorted(mol.GetPropNames()):
+        print(f"{prop}: {mol.GetProp(prop)}")
 
-    print("\nMolecular Formula:", rdMolDescriptors.CalcMolFormula(mol))
-    print("Number of Atoms:", mol.GetNumAtoms())
-    print("Number of Bonds:", mol.GetNumBonds())
+    print("\nMolecular Descriptors:")
+    print("---------------------")
+    print(f"Molecular Formula: {rdMolDescriptors.CalcMolFormula(mol)}")
+    print(f"Molecular Weight: {Descriptors.MolWt(mol):.2f}")
+    print(f"LogP: {Descriptors.MolLogP(mol):.2f}")
+    print(f"TPSA: {rdMolDescriptors.CalcTPSA(mol):.2f}")
+    print(f"Number of Rings: {rdMolDescriptors.CalcNumRings(mol)}")
+    print(f"Number of Atoms: {mol.GetNumAtoms()}")
+    print(f"Number of Bonds: {mol.GetNumBonds()}")
 
 
-def analyze_sdf_file(file_path):
-    """Analyze SDF file contents and training readiness"""
-    suppl = SDMolSupplier(file_path)
-    total_mols = 0
-    valid_mols = 0
-    property_stats = {}
+def analyze_sdf_file(mols):
+    """Analyze SDF contents with advanced statistics"""
+    total_mols = len(mols)
+    valid_mols = sum(1 for mol in mols if mol is not None)
 
-    for mol in suppl:
-        total_mols += 1
+    if valid_mols == 0:
+        print("No valid molecules found in the file.")
+        return
+
+    property_stats = defaultdict(int)
+    required_props = set()
+    invalid_count = total_mols - valid_mols
+
+    for mol in mols:
         if mol is not None:
-            valid_mols += 1
             props = mol.GetPropNames()
             for prop in props:
-                property_stats[prop] = property_stats.get(prop, 0) + 1
+                property_stats[prop] += 1
+        else:
+            invalid_count += 1  # Already accounted
 
-    print("\nFile Analysis:")
+    # Calculate required properties (present in all valid mols)
+    if valid_mols > 0:
+        required_props = [prop for prop, count in property_stats.items() if count == valid_mols]
+
+    print("\nFile Analysis Summary:")
     print(f"Total entries: {total_mols}")
     print(f"Valid molecules: {valid_mols} ({valid_mols / total_mols * 100:.1f}%)")
+    print(f"Invalid entries: {invalid_count} ({invalid_count / total_mols * 100:.1f}%)")
 
-    print("\nProperty Statistics:")
-    for prop, count in property_stats.items():
-        print(f"- {prop}: {count} entries ({count / valid_mols * 100:.1f}%)")
+    print("\nProperty Statistics (Presence in Valid Molecules):")
+    sorted_props = sorted(property_stats.items(), key=lambda x: (-x[1], x[0]))
+    for prop, count in sorted_props:
+        print(f"- {prop:20s}: {count:5d} ({count / valid_mols * 100:5.1f}%)")
+
+    print("\nConsistently Present Properties:")
+    if required_props:
+        for prop in sorted(required_props):
+            print(f"- {prop}")
+    else:
+        print("No properties present in all valid molecules")
 
 
 def main():
@@ -58,12 +92,11 @@ def main():
         print("No SDF files found in current directory")
         return
 
-    # Display file selection
     print("Available SDF files:")
     for idx, filename in enumerate(sdf_files):
         print(f"{idx + 1}: {filename}")
 
-    # Get user selection
+    # Get user selection with validation
     while True:
         try:
             selection = int(input("\nEnter file number to analyze: ")) - 1
@@ -76,16 +109,25 @@ def main():
     selected_file = sdf_files[selection]
     print(f"\nAnalyzing file: {selected_file}")
 
-    # Show first valid molecule's information
-    suppl = SDMolSupplier(selected_file)
-    for mol in suppl:
-        if mol is not None:
-            display_molecule_info(mol)
-            break  # Show first valid molecule
+    full_path = os.path.abspath(os.path.join("src/chem_augur/data", selected_file))
 
-    # Perform full file analysis
-    analyze_sdf_file(selected_file)
+    # Read molecules using the absolute path
+    suppl = SDMolSupplier(full_path)
+    mols = list(suppl)
+
+    # Show first valid molecule's details
+    first_valid = next((mol for mol in mols if mol is not None), None)
+    if first_valid:
+        display_molecule_info(first_valid)
+    else:
+        print("No valid molecules to display")
+
+    # Perform full analysis
+    analyze_sdf_file(mols)
 
 
 if __name__ == "__main__":
+    print("SDF Inspector v2.0 - Molecular Dataset Analysis Tool")
+    print("----------------------------------------------------")
     main()
+    print("----------------------------------------------------")
