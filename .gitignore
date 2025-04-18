@@ -3,3 +3,4 @@ __pycache__/
 chem_augur.egg-info
 *.pth
 *.sdf.gz
+*.sdf
