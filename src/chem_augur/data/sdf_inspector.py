@@ -1,6 +1,5 @@
 # sdf_inspector.py
 import os
-from rdkit import Chem
 from rdkit.Chem import SDMolSupplier
 from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
@@ -127,7 +126,7 @@ def main():
 
 
 if __name__ == "__main__":
-    print("SDF Inspector v2.0 - Molecular Dataset Analysis Tool")
+    print("SDF File Inspector")
     print("----------------------------------------------------")
     main()
     print("----------------------------------------------------")
