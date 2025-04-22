@@ -2,30 +2,64 @@
 from rdkit import Chem
 from torch_geometric.data import Data
 import torch
+from torch_geometric.utils import coalesce
 
-def smiles_to_pyg_graph_simple(smiles):
-    """Converts a SMILES string to a very basic PyTorch Geometric Data graph."""
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+
+def sdf_mol_to_graph(mol, target_property):
+    """Convert an RDKit molecule (from SDF) to a PyG Data object."""
+    try:
+        Chem.SanitizeMol(mol)
+    except:
+        print("Invalid molecule structure, skipping.")
         return None
 
-    # Node features: Just atom type (atomic number)
-    atom_features_list = []
-    for atom in mol.GetAtoms():
-        atom_features = [atom.GetAtomicNum()] # Just atomic number
-        atom_features_list.append(atom_features)
-    x = torch.tensor(atom_features_list, dtype=torch.float)
+    if mol is None or mol.GetNumAtoms() == 0:
+        return None
 
-    # Edge index (connectivity)
+    atom_features = []
+    for atom in mol.GetAtoms():
+        atom_features.append([atom.GetAtomicNum()])
+    x = torch.tensor(atom_features, dtype=torch.float)
+
+    edge_indices = []
+    for bond in mol.GetBonds():
+        start = bond.GetBeginAtomIdx()
+        end = bond.GetEndAtomIdx()
+        edge_indices.append((start, end))
+        edge_indices.append((end, start))  # Ensure bidirectional edges
+
+    edge_index = torch.tensor(edge_indices, dtype=torch.long).t().contiguous()
+    edge_index = coalesce(edge_index)
+
+    try:
+        y_value = mol.GetProp(target_property)
+    except KeyError:
+        print(f"Warning: Missing property '{target_property}' for this molecule.")
+        return None
+    y = torch.tensor([[float(y_value)]], dtype=torch.float)
+
+    return Data(x=x, edge_index=edge_index, y=y)
+
+
+def smiles_to_pyg_graph_simple(smiles):
+    """Converts a SMILES string to a PyG Data graph with atomic features."""
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None or mol.GetNumAtoms() == 0:
+        return None
+
+    atom_features = []
+    for atom in mol.GetAtoms():
+        atom_features.append([atom.GetAtomicNum()])
+    x = torch.tensor(atom_features, dtype=torch.float)
+
     edge_index_list = []
     for bond in mol.GetBonds():
-        start_atom_index = bond.GetBeginAtomIdx()
-        end_atom_index = bond.GetEndAtomIdx()
-        edge_index_list.append((start_atom_index, end_atom_index))
-        edge_index_list.append((end_atom_index, start_atom_index)) # Bidirectional
+        start = bond.GetBeginAtomIdx()
+        end = bond.GetEndAtomIdx()
+        edge_index_list.append((start, end))
+        edge_index_list.append((end, start))
+
     edge_index = torch.tensor(edge_index_list, dtype=torch.long).t().contiguous()
+    edge_index = coalesce(edge_index)
 
-    # No edge features for now
-
-    data = Data(x=x, edge_index=edge_index) # No edge_attr for now
-    return data
+    return Data(x=x, edge_index=edge_index)

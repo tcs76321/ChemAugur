@@ -1,7 +1,7 @@
 # src/chem_augur/models/gnn/gcn_model.py
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, global_mean_pool # Import global_mean_pool
+from torch_geometric.nn import GCNConv, global_mean_pool
 from torch.nn import Linear
 
 class SimpleGCN(torch.nn.Module):
@@ -17,16 +17,13 @@ class SimpleGCN(torch.nn.Module):
         self.lin = Linear(hidden_channels, output_channels)
 
     def forward(self, data):
-        x, edge_index, batch = data.x, data.edge_index, data.batch # Get batch information
+        x, edge_index, batch = data.x, data.edge_index, data.batch
 
-        for conv in self.conv_layers[:-1]:
+        for conv in self.conv_layers:
             x = conv(x, edge_index)
             x = F.relu(x)
             x = F.dropout(x, p=0.5, training=self.training)
 
-        x = self.conv_layers[-1](x, edge_index)
-
-        x = global_mean_pool(x, batch) # Global mean pooling to aggregate node embeddings to graph level
-
-        x = self.lin(x) # Linear layer after pooling, now operates on graph embeddings
+        x = global_mean_pool(x, batch)
+        x = self.lin(x)
         return x
