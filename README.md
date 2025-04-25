@@ -1,13 +1,28 @@
 # ChemAugur
 
-#### An open source project aiming to use graph neural networks to predict the physical properties of chemicals based only on their molecular structure and atomic makeup.
+### An open source project aiming to use graph neural networks to predict the physical properties of chemicals based only on their molecular structure and atomic makeup.
 
+## Research and Development Plan:
 - ✅ Fundamental Pytorch, Torch Geometric, RDKit architecture setup and verified
-- ✅ Ideal Dataset identified, PubChem Compound SDF via FTP
-- ✅ Finish data script to download, hashcheck, and manage SDF files
-- ☑️ Refine training procedure with a single SDF file
-- ☑️ Begin training on several SDF files
-- ☑️ Begin experimentation wit properties other than normal boiling point
+- ✅ First Dataset identified, PubChem Compound SDFs via FTP
+- ✅ Finished data script to download, hashcheck, and manage SDF files from PubChem
+- ✅ Recognized issues and limitations with PubChem Compound SDF Datasource
+  - Percent of molecules in files were invalid and stereochemistry warnings
+  - Lack of chemicals properties anticipated to be present, boiling point not included
+- ☑️ Identify Possible Superior Data Sources
+  - https://www.aatbio.com/data-sets/boiling-point-bp-and-melting-point-mp-reference-table
+  - 
+- ☑️ Architect multifaceted ETL pipeline to begin building up a purpose built SQL data warehouse
+  - Obtain valid and warning-free SMILES from PubChem SDFs to act as IDs for each entry, and the basis for building molecular graphs
+  - Use aatbio bp and mp data-set to obtain boiling points, and possibly more compounds, revalidate with RDKit
+  - 
+- ☑️ Finish building up an adequate dataset in the warehouse
+- ☑️ Refine and expand training procedure, focusing on picking best properties
+- ☑️ Train on the data warehouse, ideally in a maintainable way
+- ☑️ Experiment with properties other than normal boiling point
+  - Toxicity
+  - Psychotropic Effects
+  - Receptor affinities
 
 ## Set Up
 ```
