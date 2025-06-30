@@ -7,7 +7,7 @@
 - ✅ First Dataset identified, PubChem Compound SDFs via FTP
 - ✅ Finished data script to download, hashcheck, and manage SDF files from PubChem
 - ✅ Recognized issues and limitations with PubChem Compound SDF Datasource
-  - Percent of molecules in files were invalid and stereochemistry warnings
+  - Small percent of molecules in files were invalid and stereochemistry warnings
   - Lack of chemicals properties anticipated to be present, boiling point not included
 - ☑️ Identify Possible Superior Data Sources
   - https://www.aatbio.com/data-sets/boiling-point-bp-and-melting-point-mp-reference-table
