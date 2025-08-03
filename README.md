@@ -4,25 +4,23 @@
 
 ## Research and Development Plan:
 - ✅ Fundamental Pytorch, Torch Geometric, RDKit architecture setup and verified
-- ✅ First Dataset identified, PubChem Compound SDFs via FTP
+- ✅ First dataset identified, PubChem Compound SDFs via FTP
 - ✅ Finished data script to download, hashcheck, and manage SDF files from PubChem
-- ✅ Recognized issues and limitations with PubChem Compound SDF Datasource
-  - Small percent of molecules in files were invalid and have stereochemistry warnings
-  - Lack of chemicals properties anticipated to be present, boiling point not included
-- ☑️ Identify Possible Superior Data Sources
-  - https://www.aatbio.com/data-sets/boiling-point-bp-and-melting-point-mp-reference-table
-  - 
-- ☑️ Architect multifaceted ETL pipeline to begin building up a purpose built SQL data warehouse
-  - Obtain valid and warning-free SMILES from PubChem SDFs to act as IDs for each entry, and the basis for building molecular graphs
-  - Use aatbio bp and mp data-set to obtain boiling points, and possibly more compounds, revalidate with RDKit
-  - 
-- ☑️ Finish building up an adequate dataset in the warehouse
+- ✅ Recognized issues and limitations with using only a PubChem Compound SDF Datasource
+- ❌ Identify possible superior data sources; some options, but no complete solutions
+- 👨‍💻 Architect and develop ETL pipeline and a data warehouse to begin building up
+  - Multi-faceted approach
+    - Obtain valid and stereochemistry warning-free SMILES from PubChem SDFs, maybe to act as IDs for each entry, and then the basis for building molecular graphs with RDkit
+    - Use aatbio bp and mp data-set to obtain boiling points, and possibly more compounds, revalidate with RDKit at each step
+    - Focus on relevant chemicals with an inclusive variety of bonds and stereochemical features
+- ☑️ Build up an adequate dataset in the warehouse to train on, at least thousands, likely need tens of thousands of molecules
 - ☑️ Refine and expand training procedure, focusing on picking best properties
-- ☑️ Train on the data warehouse, ideally in a maintainable way
+- ☑️ Train on the data warehouse
 - ☑️ Experiment with properties other than normal boiling point
   - Toxicity
   - Psychotropic Effects
   - Receptor affinities
+- ☑️ Repeat from: Build up a larger database, or refactor datawarehouse, or refactor pipeline
 
 ## Set Up
 ```
