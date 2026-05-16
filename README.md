@@ -1,62 +1,113 @@
 # ChemAugur
 
-**Graph neural networks for predicting physical properties of small molecules from structure alone.**
+Graph neural networks for predicting molecular properties from structure alone.
 
-ChemAugur is an open-source PyTorch Geometric project that trains graph convolutional networks (GCNs) on molecular graphs — atoms as nodes, bonds as edges — to predict physical and chemical properties without requiring hand-engineered descriptors or quantum mechanical calculations.
+ChemAugur converts molecular structures into graph representations and trains Graph Convolutional Networks (GCNs) to predict physical and chemical properties. It uses RDKit for chemistry, PyTorch Geometric for graph learning, and PubChem as the data source — no hand-crafted descriptors or quantum calculations required.
 
+## Architecture
 
+Molecules are represented as graphs: atoms are nodes, bonds are edges.
 
-## Why GCNs for molecular property prediction?
+| Component | Details |
+|---|---|
+| **Node features** | 34-dim vector per atom: atomic number, degree, formal charge, hybridization, aromaticity, chirality, hydrogen count, valence, ring membership |
+| **Edge features** | 7-dim vector per bond: bond type (single/double/triple/aromatic), conjugation, ring membership |
+| **Model** | Multi-layer GCN with ReLU activation, dropout, and global mean pooling |
+| **Output** | Single regression value (configurable target property) |
 
-Molecules are graphs. Traditional QSAR pipelines flatten them into fingerprints (Morgan, MACCS) or descriptor vectors, losing structural context in the process. Message-passing GNNs operate directly on the graph, learning representations that respect the symmetries of chemistry: permutation invariance over atoms, locality of bonding, and the relevance of neighborhood topology to properties like LogP, solubility, and polar surface area.
+## Project Structure
 
+```
+src/chem_augur/
+├── data/
+│   ├── pubchem_sdf_download.py   # Download SDF files from PubChem FTP
+│   └── sdf_inspector.py          # Inspect and analyze SDF contents
+├── features/
+│   ├── molecular_graph.py        # Convert RDKit molecules → PyG Data objects
+│   └── molecular_dataset.py      # Dataset class with caching, splits, normalization
+├── models/gnn/
+│   └── gcn_model.py              # SimpleGCN model definition
+├── training/
+│   ├── gnn_train.py              # Full training pipeline (recommended)
+│   └── train_simple.py           # Minimal training example (8 alkanes)
+└── prediction/
+    └── predict_simple.py         # Predict property from a SMILES string
+```
 
-## Status
+## Prerequisites
 
-**Early stage. Single-property regression baseline working end-to-end on PubChem SDF data.**
-
-Current capabilities:
-- Bulk download and inspection of PubChem SDF compound files
-- Conversion of SDF records to PyTorch Geometric `Data` objects
-- A simple GCN baseline with training and single-molecule inference scripts
-- Reproducible environment via pinned `pyproject.toml` and `pip-compile`
-
-Not yet implemented (see roadmap): multi-task prediction, uncertainty quantification, message-passing variants beyond GCN, published benchmark results, model cards.
+- Python 3.11+
+- GPU recommended for large datasets; CPU works for small-scale experiments
 
 ## Installation
-
-Requires Python 3.10+ and a working PyTorch install. CPU-only is fine for the baseline; GPU recommended for larger datasets.
 
 ```bash
 pip install -r reqs/development.txt
 pip install -e .
 ```
 
-## Quick start
+## Quick Start
 
-Download a PubChem SDF slice:
+### 1. Download training data
+
+Downloads compressed SDF files from PubChem with MD5 verification and automatic decompression:
 
 ```bash
 python src/chem_augur/data/pubchem_sdf_download.py
 ```
 
-Inspect what you got:
+### 2. Inspect your data
+
+Review molecule counts and available properties in the downloaded files:
 
 ```bash
 python src/chem_augur/data/sdf_inspector.py
 ```
 
-Train the baseline GCN:
+### 3. Train
+
+Train the GCN on PubChem data with early stopping, learning-rate scheduling, and checkpointing:
 
 ```bash
-PYTHONPATH=src python src/chem_augur/training/train_simple.py
+PYTHONPATH=src python src/chem_augur/training/gnn_train.py
 ```
 
-Predict a property for a molecule the model has not seen:
+The best model (by validation MAE) is saved to `src/chem_augur/models/gnn/gcn_best_checkpoint.pt`.
+
+### 4. Predict
+
+Predict a property for any molecule by SMILES:
 
 ```bash
-PYTHONPATH=src python src/chem_augur/prediction/predict_simple.py
+PYTHONPATH=src python src/chem_augur/prediction/predict_simple.py "CCO" --checkpoint src/chem_augur/models/gnn/gcn_best_checkpoint.pt
 ```
+
+Or use the API programmatically:
+
+```python
+from chem_augur.prediction.predict_simple import predict_property
+
+value = predict_property("CCO")
+print(f"Predicted: {value:.4f}")
+```
+
+## Configuration
+
+Training hyperparameters are defined as module-level constants in `src/chem_augur/training/gnn_train.py`:
+
+| Parameter | Default | Description |
+|---|---|---|
+| `HIDDEN_CHANNELS` | 64 | Hidden layer dimension |
+| `NUM_LAYERS` | 4 | Number of GCN convolution layers |
+| `DROPOUT` | 0.5 | Dropout rate |
+| `LEARNING_RATE` | 1e-3 | Initial learning rate |
+| `BATCH_SIZE` | 32 | Training batch size |
+| `MAX_EPOCHS` | 200 | Maximum training epochs |
+| `PATIENCE` | 25 | Early-stopping patience |
+| `TARGET_PROPERTY` | "pIC50" | Molecule property to predict |
+| `SDF_FILES` | 3 files | Paths to input SDF files |
+
+Edit these values directly in `gnn_train.py` before running training.
 
 ## Development
 
@@ -74,3 +125,7 @@ pip-compile --extra dev --output-file=reqs/development.txt pyproject.toml
 - [ ] Uncertainty estimates via MC dropout or deep ensembles
 - [ ] Hugging Face Hub model card with reproducible evaluation
 - [ ] JOSS submission once benchmarks are published
+
+## License
+
+GPL-3.0
