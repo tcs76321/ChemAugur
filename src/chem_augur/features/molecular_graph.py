@@ -33,10 +33,19 @@ HYBRIDIZATION_MAP = {
 NUM_HYBRIDIZATION_CLASSES = 6
 
 ATOM_SYMBOLS = [
-    "C", "N", "O", "S", "F", "P", "Cl", "Br", "I", "B", "Si", "F", "Na",
+    "C", "N", "O", "S", "F", "P", "Cl", "Br", "I", "B", "Si", "Na",
     "Mg", "Al", "K", "Ca", "Fe", "Zn", "Other"
 ]
-NUM_ATOM_CLASSES = len(ATOM_SYMBOLS)  # 20
+NUM_ATOM_CLASSES = len(ATOM_SYMBOLS)  # 19
+
+# ---------------------------------------------------------------------------
+# One-hot dimension sizes for categorical atom features
+# ---------------------------------------------------------------------------
+NUM_DEGREE_CLASSES = 6  # degree 0-5 (clamped)
+CHARGE_CLASSES = 5       # formal charge -2..+2
+CHIRAL_CLASSES = 3       # R-NONE, R-CLIW, R-CW (0..2)
+NUM_H_COUNT_CLASSES = 6  # total H count 0-5 (clamped)
+NUM_VALENCE_CLASSES = 6  # total valence 0-5 (clamped)
 
 
 def get_atom_feature(atom: Chem.Atom) -> List[float]:
@@ -61,12 +70,12 @@ def get_atom_feature(atom: Chem.Atom) -> List[float]:
 
     # 2. Degree
     degree = min(atom.GetDegree(), 5)
-    degree_oh = _one_hot(degree, NUM_HYBRIDIZATION_CLASSES)  # 6 classes
+    degree_oh = _one_hot(degree, NUM_DEGREE_CLASSES)
 
     # 3. Formal charge (clamped to -2 .. 2 → indices 0..4)
     formal_charge = max(-2, min(2, atom.GetFormalCharge()))
     charge_idx = formal_charge + 2  # shift to 0-based
-    charge_oh = _one_hot(charge_idx, 5)
+    charge_oh = _one_hot(charge_idx, CHARGE_CLASSES)
 
     # 4. Hybridization
     try:
@@ -78,17 +87,17 @@ def get_atom_feature(atom: Chem.Atom) -> List[float]:
     # 5. Aromatic
     aromatic = float(atom.GetIsAromatic())
 
-    # 6. Chiral tag (0=RNONE, 1=RCLIW, 2=RCW)
+    # 6. Chiral tag (0=R-NONE, 1=R-CLIW, 2=R-CW)
     chiral_tag = min(int(atom.GetChiralTag()), 2)
-    chiral_oh = _one_hot(chiral_tag, 3)
+    chiral_oh = _one_hot(chiral_tag, CHIRAL_CLASSES)
 
     # 7. Total H count
     total_h = min(atom.GetTotalNumHs(), 5)
-    h_oh = _one_hot(total_h, NUM_HYBRIDIZATION_CLASSES)
+    h_oh = _one_hot(total_h, NUM_H_COUNT_CLASSES)
 
     # 8. Total valence
     total_valence = min(atom.GetTotalValence(), 5)
-    valence_oh = _one_hot(total_valence, NUM_HYBRIDIZATION_CLASSES)
+    valence_oh = _one_hot(total_valence, NUM_VALENCE_CLASSES)
 
     # 9. In ring
     in_ring = float(atom.IsInRing())
@@ -151,12 +160,12 @@ def mol_to_graph(mol: Chem.Mol, target_property: Optional[str] = None) -> Option
           - edge_attr:  [num_edges, BOND_FEATURE_DIM] edge features
           - y:        [1] regression target (only if target_property given)
     """
+    if mol is None or mol.GetNumAtoms() == 0:
+        return None
+
     try:
         Chem.SanitizeMol(mol)
     except Exception:
-        return None
-
-    if mol is None or mol.GetNumAtoms() == 0:
         return None
 
     # --- Node features ---
@@ -177,8 +186,15 @@ def mol_to_graph(mol: Chem.Mol, target_property: Optional[str] = None) -> Option
         edge_features.append(bfeat)
 
     edge_index = torch.tensor(edge_indices, dtype=torch.long).t().contiguous()
-    edge_index = coalesce(edge_index)
     edge_attr = torch.tensor(edge_features, dtype=torch.float)
+    # Coalesce edge_index and apply the same remapping to edge_attr.
+    # coalesce returns (coalesced_edge_index, None) or (coalesced_edge_index, edge_attr)
+    # depending on PyG version. Handle both.
+    coalesced = coalesce(edge_index, edge_attr)
+    if isinstance(coalesced, tuple):
+        edge_index, edge_attr = coalesced
+    else:
+        edge_index = coalesced
 
     # --- Label ---
     y = None

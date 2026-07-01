@@ -44,6 +44,8 @@ class MolecularDataset(Dataset):
                          pre_transform=pre_transform)
         self.target_property = target_property
         self.sdf_files = sdf_files
+        self._collated_data = None
+        self._collated_slices = None
 
     # ---------------------------------------------------------------
     # Dataset interface
@@ -56,13 +58,20 @@ class MolecularDataset(Dataset):
     def processed_file_names(self) -> List[str]:
         return ["graphs.pt"]
 
+    def _ensure_loaded(self):
+        """Load processed data from disk once and cache it."""
+        if self._collated_data is None:
+            self._collated_data, self._collated_slices = torch.load(
+                self.processed_paths[0], weights_only=False
+            )
+
     def len(self) -> int:
-        data, _ = torch.load(self.processed_paths[0])
-        return len(data)
+        self._ensure_loaded()
+        return len(self._collated_data)
 
     def get(self, idx: int) -> Data:
-        data, _ = torch.load(self.processed_paths[0])
-        return data[idx]
+        self._ensure_loaded()
+        return self._collated_data[idx]
 
     # ---------------------------------------------------------------
     # Processing

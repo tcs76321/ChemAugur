@@ -59,8 +59,14 @@ def predict_property(
     model, scaler = _load_checkpoint(checkpoint_path, device)
 
     with torch.no_grad():
-        pred = model(Data(x=graph.x.unsqueeze(0), edge_index=graph.edge_index,
-                          batch=torch.tensor([0])))
+        pred = model(
+            Data(
+                x=graph.x.unsqueeze(0),
+                edge_index=graph.edge_index,
+                edge_attr=graph.edge_attr,
+                batch=torch.tensor([0]),
+            )
+        )
     # Inverse-transform to original scale
     original_pred = scaler.inverse_transform(pred)
     return original_pred.item()
