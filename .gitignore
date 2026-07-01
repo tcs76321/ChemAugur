@@ -2,5 +2,12 @@
 __pycache__/
 chem_augur.egg-info
 *.pth
+*.pt
 *.sdf.gz
 *.sdf
+.venv/
+venv/
+processed_*/
+build/
+dist/
+*.egg-info/
