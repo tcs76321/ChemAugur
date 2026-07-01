@@ -31,7 +31,7 @@ class SimpleGCN(torch.nn.Module):
         self.conv_layers.append(GCNConv(num_node_features, hidden_channels))
 
         # Intermediate convs
-        for _ in range(num_layers - 2):
+        for _ in range(num_layers - 1):
             self.conv_layers.append(GCNConv(hidden_channels, hidden_channels))
 
         # Final readout

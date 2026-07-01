@@ -61,10 +61,10 @@ def predict_property(
     with torch.no_grad():
         pred = model(
             Data(
-                x=graph.x.unsqueeze(0),
+                x=graph.x,
                 edge_index=graph.edge_index,
                 edge_attr=graph.edge_attr,
-                batch=torch.tensor([0]),
+                batch=torch.zeros(graph.x.shape[0], dtype=torch.long),
             )
         )
     # Inverse-transform to original scale

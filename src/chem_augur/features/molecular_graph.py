@@ -63,7 +63,7 @@ def get_atom_feature(atom: Chem.Atom) -> List[float]:
       8. Total valence                                        – 6 dim  (0-5 + clamp)
       9. In-ring flag                                         – 1 dim
 
-    Total: 34 dimensions
+    Total: ATOM_FEATURE_DIM dimensions
     """
     # 1. Atomic number (normalized by 100 for scale)
     atomic_num = atom.GetAtomicNum() / 100.0
@@ -78,10 +78,7 @@ def get_atom_feature(atom: Chem.Atom) -> List[float]:
     charge_oh = _one_hot(charge_idx, CHARGE_CLASSES)
 
     # 4. Hybridization
-    try:
-        hybrid_idx = HYBRIDIZATION_MAP.get(atom.GetHybridization(), 5)
-    except Exception:
-        hybrid_idx = 5  # fallback to SP3D2 / unknown
+    hybrid_idx = HYBRIDIZATION_MAP.get(atom.GetHybridization(), 5)
     hybrid_oh = _one_hot(hybrid_idx, NUM_HYBRIDIZATION_CLASSES)
 
     # 5. Aromatic

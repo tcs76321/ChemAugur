@@ -37,13 +37,17 @@ dev = [
     "black>=25.1.0",
 ]
 test = [
-    # "pytest>=8.0.0",    # Testing framework
-    # "pytest-cov>=5.0.0",
+    "pytest>=8.0.0",    # Testing framework
+    "pytest-cov>=5.0.0",
 ]
 docs = [
-    # "sphinx>=7.0.0",    # Documentation
-    # "furo>=2023.9.0",
+    "sphinx>=7.0.0",    # Documentation
+    "furo>=2023.9.0",
 ]
+
+[project.scripts]
+chem-augur-train = "chem_augur.training.train_mace:main"
+chem-augur-predict = "chem_augur.prediction.predict_mace:main"
 
 [tool.setuptools.packages.find]
 where = ["."]  # Directory containing your Python packages

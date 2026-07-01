@@ -19,6 +19,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch_geometric.loader import DataLoader
+from torch.utils.data import Subset
 
 from chem_augur.features.molecular_graph import ATOM_FEATURE_DIM
 from chem_augur.features.molecular_dataset import (
@@ -60,6 +61,10 @@ TRAIN_RATIO = 0.8
 VAL_RATIO = 0.1
 TEST_RATIO = 0.1
 SEED = 42
+
+torch.manual_seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
 
 
 # ---------------------------------------------------------------------------
@@ -140,9 +145,9 @@ def main():
     print(f"Target scaler  mean={scaler.mean:.4f}, std={scaler.std:.4f}")
 
     # 4. DataLoaders -----------------------------------------------------------
-    train_loader = DataLoader(dataset, train_indices=train_idx, batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(dataset, train_indices=val_idx, batch_size=BATCH_SIZE)
-    test_loader = DataLoader(dataset, train_indices=test_idx, batch_size=BATCH_SIZE)
+    train_loader = DataLoader(Subset(dataset, train_idx), batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(Subset(dataset, val_idx), batch_size=BATCH_SIZE, shuffle=False)
+    test_loader = DataLoader(Subset(dataset, test_idx), batch_size=BATCH_SIZE, shuffle=False)
 
     # 5. Model -----------------------------------------------------------------
     model = SimpleGCN(
