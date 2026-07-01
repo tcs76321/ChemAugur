@@ -50,9 +50,8 @@ chem-augur-train = "chem_augur.training.train_mace:main"
 chem-augur-predict = "chem_augur.prediction.predict_mace:main"
 
 [tool.setuptools.packages.find]
-where = ["."]  # Directory containing your Python packages
-include = ["*"]
-namespaces = true
+where = ["src"]  # Directory containing your Python packages
+include = ["chem_augur*"]
 
 [tool.black]
 target-version = ["py311"]

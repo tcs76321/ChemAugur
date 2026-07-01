@@ -25,13 +25,12 @@ import logging
 import os
 import time
 from datetime import datetime
-from pathlib import Path
 from typing import Optional, List, Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from rdkit import Chem
 from torch.utils.data import Subset
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Data
@@ -42,7 +41,10 @@ from chem_augur.features.conformer_generation import (
     mol_to_3d_data,
 )
 from chem_augur.features.molecular_dataset import StandardScaler
-from chem_augur.features.mixture_builder import build_mixture
+from chem_augur.features.geometry_dataset import (
+    Geometry3DDataset,
+    normalize_geometry_dataset,
+)
 from chem_augur.models.registry import build_model
 
 # ---------------------------------------------------------------------------
@@ -247,14 +249,15 @@ def load_checkpoint(
 
 def prepare_geometry_data(
     config: TrainingConfig,
+    use_sdf: bool = False,
 ) -> Tuple[GeometryDataset, StandardScaler, List[int], List[int], List[int]]:
     """
     Load or generate 3D geometry data, split into train/val/test, and
     normalize targets.
 
-    For now, this generates synthetic data from a small set of SMILES strings
-    as a placeholder. In production, this would load from SDF files with 3D
-    conformers or a pre-computed cache.
+    When use_sdf=True and SDF files are available, uses Geometry3DDataset
+    to load real data with conformer generation and caching. Otherwise,
+    falls back to a small synthetic dataset for testing.
 
     Returns:
         dataset: GeometryDataset with all samples.
@@ -263,8 +266,55 @@ def prepare_geometry_data(
     """
     logger.info("Preparing geometry data...")
 
-    # Placeholder: generate a small synthetic dataset
-    # In production, load from SDF files or pre-computed cache
+    # Check if real SDF data is available
+    sdf_available = any(
+        os.path.exists(f) for f in config.sdf_files
+    )
+
+    if use_sdf and sdf_available:
+        logger.info("Loading real data from SDF files via Geometry3DDataset...")
+        try:
+            geo_dataset = Geometry3DDataset(
+                root_dir=config.root_dir,
+                sdf_files=config.sdf_files,
+                target_property=config.target_property,
+                seed=config.seed,
+            )
+
+            if len(geo_dataset) == 0:
+                logger.warning(
+                    "Geometry3DDataset produced 0 samples. "
+                    "Falling back to synthetic data."
+                )
+            else:
+                train_idx, val_idx, test_idx = Geometry3DDataset.split(
+                    geo_dataset,
+                    train_ratio=config.train_ratio,
+                    val_ratio=config.val_ratio,
+                    test_ratio=config.test_ratio,
+                    seed=config.seed,
+                )
+
+                logger.info(
+                    f"Split: train={len(train_idx)}, val={len(val_idx)}, "
+                    f"test={len(test_idx)}"
+                )
+
+                scaler = normalize_geometry_dataset(geo_dataset, train_idx)
+                logger.info(
+                    f"Target stats: mean={scaler.mean:.4f}, "
+                    f"std={scaler.std:.4f}"
+                )
+
+                return geo_dataset, scaler, train_idx, val_idx, test_idx
+        except Exception as e:
+            logger.warning(
+                f"Geometry3DDataset failed: {e}. "
+                "Falling back to synthetic data."
+            )
+
+    # Fallback: synthetic dataset for testing
+    logger.info("Using synthetic placeholder dataset.")
     test_smiles = [
         "CCO",          # ethanol
         "CC(C)O",       # isopropanol
@@ -278,8 +328,6 @@ def prepare_geometry_data(
         "CC(C)=O",      # acetone
     ]
 
-    # Synthetic property values (placeholder — replace with real data)
-    # These are approximate boiling points in °C
     synthetic_properties = [
         78.37,   # ethanol
         82.5,    # isopropanol
@@ -302,11 +350,10 @@ def prepare_geometry_data(
         except Exception as e:
             logger.warning(f"Failed to generate data for {smiles}: {e}")
 
-    logger.info(f"Generated {len(samples)} geometry samples")
+    logger.info(f"Generated {len(samples)} synthetic geometry samples")
 
     dataset = GeometryDataset(samples)
 
-    # Split
     n = len(dataset)
     indices = torch.randperm(
         n, generator=torch.Generator().manual_seed(config.seed)
@@ -323,13 +370,11 @@ def prepare_geometry_data(
         f"Split: train={len(train_idx)}, val={len(val_idx)}, test={len(test_idx)}"
     )
 
-    # Normalize targets
     scaler = StandardScaler()
     ys = torch.cat([dataset[i].y for i in train_idx])
     scaler.fit(ys)
     logger.info(f"Target stats: mean={scaler.mean:.4f}, std={scaler.std:.4f}")
 
-    # Apply normalization to all samples
     for i in range(len(dataset)):
         data = dataset[i]
         data.y = scaler.transform(data.y)
@@ -348,9 +393,11 @@ def _generate_single_sample(
     For pure substances: one molecule placed in space.
     For mixtures (future): multiple molecules in shared space.
     """
-    # Currently generating single-molecule samples
-    mol = generate_3d_conformer(smiles, seed=config.seed)
-    data = mol_to_3d_data(mol, target_property=None)
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        raise ValueError(f"Could not parse SMILES: {smiles}")
+    mol_3d = generate_3d_conformer(mol, seed=config.seed)
+    data = mol_to_3d_data(mol_3d, target_property=None)
     data.y = torch.tensor([[property_value]], dtype=torch.float)
     return data
 
@@ -384,12 +431,20 @@ def _setup_tensorboard(config: TrainingConfig):
 # Main training loop
 # ---------------------------------------------------------------------------
 
-def train(config: TrainingConfig) -> None:
+def train(
+    config: TrainingConfig,
+    resume_path: Optional[str] = None,
+    use_sdf: bool = False,
+    num_workers: int = 0,
+) -> None:
     """
     Run the full training pipeline.
 
     Args:
         config: TrainingConfig with all hyperparameters.
+        resume_path: Path to checkpoint to resume from (None = fresh start).
+        use_sdf: Whether to use real SDF data via Geometry3DDataset.
+        num_workers: Number of DataLoader worker processes.
     """
     config.validate()
 
@@ -406,22 +461,27 @@ def train(config: TrainingConfig) -> None:
     writer = _setup_tensorboard(config)
 
     # ---- Data ----
-    dataset, scaler, train_idx, val_idx, test_idx = prepare_geometry_data(config)
+    dataset, scaler, train_idx, val_idx, test_idx = prepare_geometry_data(
+        config, use_sdf=use_sdf,
+    )
 
     train_loader = DataLoader(
         Subset(dataset, train_idx),
         batch_size=config.batch_size,
         shuffle=True,
+        num_workers=num_workers,
     )
     val_loader = DataLoader(
         Subset(dataset, val_idx),
         batch_size=config.batch_size,
         shuffle=False,
+        num_workers=num_workers,
     )
     test_loader = DataLoader(
         Subset(dataset, test_idx),
         batch_size=config.batch_size,
         shuffle=False,
+        num_workers=num_workers,
     )
 
     # ---- Model ----
@@ -455,14 +515,32 @@ def train(config: TrainingConfig) -> None:
         verbose=True,
     )
 
-    # ---- Training loop ----
+    # ---- Resume from checkpoint ----
+    start_epoch = 1
     best_val_loss = float("inf")
     patience_counter = 0
+
+    if resume_path is not None:
+        logger.info(f"Resuming from checkpoint: {resume_path}")
+        meta = load_checkpoint(resume_path, model, optimizer, device)
+        start_epoch = meta["epoch"] + 1
+        best_val_loss = meta["best_val_loss"]
+        ckpt_scaler = meta["scaler"]
+        # Use the checkpoint's scaler for inverse transforms
+        if ckpt_scaler is not None:
+            scaler = ckpt_scaler
+        logger.info(
+            f"Resumed from epoch {meta['epoch']} "
+            f"(best_val_loss={best_val_loss:.4f}), "
+            f"starting at epoch {start_epoch}"
+        )
+
+    # ---- Training loop ----
     start_time = time.time()
 
     os.makedirs(config.checkpoint_dir, exist_ok=True)
 
-    for epoch in range(1, config.max_epochs + 1):
+    for epoch in range(start_epoch, config.max_epochs + 1):
         t0 = time.time()
 
         train_loss, train_mae_val, train_rmse_val = train_epoch(
@@ -594,6 +672,24 @@ def main() -> None:
         default=None,
         help="Learning rate (overrides config).",
     )
+    parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Path to checkpoint to resume training from.",
+    )
+    parser.add_argument(
+        "--sdf",
+        action="store_true",
+        default=False,
+        help="Use real SDF data via Geometry3DDataset (with conformer generation).",
+    )
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=0,
+        help="Number of DataLoader worker processes.",
+    )
     args = parser.parse_args()
 
     # Load config
@@ -618,7 +714,12 @@ def main() -> None:
     if args.lr:
         config.learning_rate = args.lr
 
-    train(config)
+    train(
+        config,
+        resume_path=args.resume,
+        use_sdf=args.sdf,
+        num_workers=args.num_workers,
+    )
 
 
 if __name__ == "__main__":

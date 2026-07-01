@@ -146,8 +146,9 @@ class TrainingConfig:
     # ------------------------------------------------------------------
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert config to a plain dictionary."""
-        return asdict(self)
+        """Convert config to a plain dictionary, omitting None values."""
+        d = asdict(self)
+        return {k: v for k, v in d.items() if v is not None}
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "TrainingConfig":
@@ -159,7 +160,6 @@ class TrainingConfig:
     def to_toml(self, path: str) -> None:
         """Save configuration to a TOML file."""
         try:
-            import tomllib  # Python 3.11+
             import tomli_w  # type: ignore
         except ImportError:
             raise ImportError(
@@ -167,7 +167,7 @@ class TrainingConfig:
                 "Install with: pip install tomli-w"
             )
 
-        with open(path, "w") as f:
+        with open(path, "wb") as f:
             tomli_w.dump(self.to_dict(), f)
 
     @classmethod

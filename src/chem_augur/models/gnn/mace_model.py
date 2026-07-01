@@ -127,6 +127,14 @@ class MACEWrapper(nn.Module):
         self.cutoff = cutoff
         self.out_channels = out_channels
 
+        # Build hidden_irreps string dynamically from max_ell.
+        # Parity alternates: even l → even parity (e), odd l → odd parity (o).
+        _parity = lambda l: "e" if l % 2 == 0 else "o"
+        _irrep_parts = [
+            f"{hidden_channels}x{l}{_parity(l)}" for l in range(max_ell + 1)
+        ]
+        _hidden_irreps = " + ".join(_irrep_parts)
+
         # MACE model construction.
         # The MACE class from mace-torch takes configuration through
         # keyword arguments. We map our clean parameter names to theirs.
@@ -137,7 +145,7 @@ class MACEWrapper(nn.Module):
             max_ell=max_ell,
             correlation=correlation,
             num_interactions=num_interactions,
-            hidden_irreps=f"{hidden_channels}x0e + {hidden_channels}x1o + {hidden_channels}x2e",
+            hidden_irreps=_hidden_irreps,
             MLP_irreps=f"{hidden_channels}x0e",
             atomic_energies=None,  # No per-element bias for property prediction
             avg_num_neighbors=avg_num_neighbors,
@@ -206,15 +214,11 @@ class MACEWrapper(nn.Module):
                 # Fallback: use first available feature
                 node_features = list(node_features.values())[0]
 
-        # Global mean pooling over atoms in each graph
-        num_graphs = batch.max().item() + 1 if len(batch) > 0 else 1
-        pooled = torch.zeros(num_graphs, node_features.shape[1],
-                            device=node_features.device)
-
-        for i in range(num_graphs):
-            mask = (batch == i)
-            if mask.any():
-                pooled[i] = node_features[mask].mean(dim=0)
+        # Global mean pooling over atoms in each graph using scatter operations.
+        # Uses torch_scatter when available (via PyG's global_mean_pool), which
+        # is O(N) in C++/CUDA rather than O(num_graphs) in Python.
+        from torch_geometric.nn import global_mean_pool
+        pooled = global_mean_pool(node_features, batch)
 
         # Output head
         return self.output_head(pooled)

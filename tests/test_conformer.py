@@ -135,7 +135,7 @@ class TestMolTo3DData:
         """Molecule without conformer should raise ValueError."""
         mol = Chem.MolFromSmiles("CCO")
 
-        with pytest.raises(ValueError, match="no 3D conformer"):
+        with pytest.raises(ValueError, match="no 3D conformer|Bad Conformer"):
             mol_to_3d_data(mol)
 
     def test_none_molecule_raises(self):

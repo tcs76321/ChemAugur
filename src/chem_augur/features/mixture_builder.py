@@ -307,7 +307,8 @@ def build_mixture(
         # Set conformer positions
         conf = Chem.Conformer(combined_mol.GetNumAtoms())
         for i, pos_i in enumerate(pos.numpy()):
-            conf.SetAtomPosition(i, pos_i)
+            # Unpack x, y, z explicitly — RDKit requires separate floats
+            conf.SetAtomPosition(i, (float(pos_i[0]), float(pos_i[1]), float(pos_i[2])))
         combined_mol.AddConformer(conf)
 
         # MMFF optimization
